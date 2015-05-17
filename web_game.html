@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="web_game.css">
+    <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
+    <script>
+        function init() {
+    		var canvas = document.getElementById("canvas");
+		    canvas.width = window.innerWidth;
+		    canvas.height = window.innerHeight;
+        	console.log("initit");
+			var stage = new createjs.Stage("canvas");
+			var circle = new createjs.Shape();
+			circle.graphics.beginFill("red").drawCircle(0, 0, 50);
+			circle.x = 100;
+			circle.y = 100;
+			stage.addChild(circle);
+			stage.enableMouseOver(10);
+			stage.update();
+		
+
+		    stage.on("stagemousemove",function(evt) {
+				circle.x = evt.stageX;
+				circle.y = evt.stageY;
+				stage.update();
+			})
+        }
+    </script>
+</head>
+<body onload="init();">
+    <canvas id="canvas" width="500" height="300">
+        alternate content
+    </canvas>
+</body>
+</html>
