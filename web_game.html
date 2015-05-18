@@ -4,48 +4,128 @@
 	<link rel="stylesheet" type="text/css" href="web_game.css">
     <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
     <script>
-
+    	//Global variables
+    	var Score = 0;
+    	var framerate = 0;
 		//http://www.howtocreate.co.uk/tutorials/javascript/objects
-		//playerbar is a red rectangle that moves with the mouse
-		function playerBar(yCoord, height, width, stage){
+		//http://www.createjs.com/tutorials/Animation%20and%20Ticker/
+
+		//PLAYERBAR CLASS -------------------------------------------------------------------------------------------------------------
+		function createPlayerBar(yCoord, speed, height, width, stage){
 			console.log("object created");
 			this.height = height;
 			this.width = width;
+			this.x = 200;
+			this.y = yCoord;
+			this.dx = speed;
+			var mouseX = 0;
 
 			//instantiates the bar as an easelJS shape
-			var bar = new createjs.Shape();
-			bar.graphics.beginFill("red").drawRect(0, 0, this.width, this.height);
-			bar.y = yCoord;
-			stage.addChild(bar);
+			this.bar = new createjs.Shape();
+			this.bar.graphics.beginFill("black").drawRect(0, 0, this.width, this.height);
+			this.bar.y = yCoord;
+			stage.addChild(this.bar);
 
-			//changes the location of the bar. The bar is centered at newX
-			this.setX = function(newX){
-				if(newX < canvas.width - this.width && newX > 0 + this.width){
-					bar.x = newX - this.width/2;
-				} else if (newX > canvas.width - this.width){
-					bar.x = canvas.width - this.width;
-				} else if (newX < 0 + this.width){
-					console.log("too far");
-					bar.x = 0;
+			this.setX = function(x){
+				mouseX = x;
+			};
+
+			this.updateBar = function(){
+				this.bar.x = this.x;
+				if(this.x < canvas.width - this.width && this.x > 0){
+					//the 5 is leeway so that users can keep their mice still and the bar will not spazz
+					if(mouseX < this.x){
+						this.x = this.x - this.dx;
+					} else if (mouseX > this.x + this.width){
+						this.x = this.x + this.dx;
+					}
+				//keeps bar from moving farther right if it is at the right edge
+				} else if (this.x >= canvas.width - this.width){
+					if(mouseX < this.x){
+						this.x = this.x - this.dx;
+					} else {
+						this.x = canvas.width - this.width;
+					}					
+				//keeps bar from moving farther left if it is at the left edge
+				} else if (this.x <= 0){
+					if (mouseX > this.x + this.width){
+						this.x = this.x + this.dx;
+					} else {
+						this.x = 0;
+					}
 				}
-				console.log(bar.x);
 				stage.update();
+			};
+		}
+
+
+		//BALL CLASS --------------------------------------------------------------------------------------------------------------
+		function createBall(startX, startY, speed, radius, stage){
+			this.dx = speed;
+			this.dy = speed;
+
+			this.radius = radius;
+			this.ball = new createjs.Shape();
+			this.ball.graphics.beginFill("black").drawCircle(0, 0, radius);
+			this.ball.x = startX;
+			this.ball.y = startY;
+			stage.addChild(this.ball);
+
+			this.updateBall = function(){
+				if()
+				this.ball.x = this.ball.x + this.dx;
+				this.ball.y = this.ball.y + this.dy;
 			}
 		}
+
+		//SCOREBAR CLASS -------------------------------------------------------------------------------------------------------
+		function createScoreBar(stage){
+			this.score = new createjs.Text("FPS: 00", "20px Arial", "#000000");
+			this.score.x = 900;
+			this.score.y = 50;
+			this.score.textBaseline = "alphabetic";
+			stage.addChild(this.score);
+
+			this.updateScoreBar = function(){
+				this.score.text = "FPS: "+ framerate; 
+			}			
+		}
+
+
+
 
         function init() {
 
     		var canvas = document.getElementById("canvas");
 		    canvas.width = window.innerWidth-200;
 		    canvas.height = window.innerHeight-200;
-        	console.log("initit");
+        	// console.log("initit");
 
 			var stage = new createjs.Stage("canvas");
-			stage.enableMouseOver(30);
+			stage.enableMouseOver(5);
 
-			var player1 = new playerBar(400, 20, 100, stage);
+			var player1 = new createPlayerBar(400, 15, 20, 100, stage);
+			var ball1 = new createBall(50, 50, 50, 5, stage);
+			var scoreBar = new createScoreBar(stage);
 
-			//listener for movement of the playerbar
+
+			//tick handler
+			createjs.Ticker.addEventListener("tick", handleTick);
+			createjs.Ticker.setFPS(60);
+
+			// createjs.Ticker.framerate = 60;
+			function handleTick(event) {
+				framerate = createjs.Ticker.getMeasuredFPS();
+				// Actions carried out each tick (aka frame)
+				// console.log("tick");
+				player1.updateBar();
+				scoreBar.updateScoreBar();
+				ball1.updateBall();
+
+
+			}
+
+			//mouse handler
 		    stage.on("stagemousemove",function(evt) {
 		    	player1.setX(evt.stageX);
 			})
