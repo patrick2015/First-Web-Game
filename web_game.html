@@ -4,31 +4,57 @@
 	<link rel="stylesheet" type="text/css" href="web_game.css">
     <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
     <script>
-        function init() {
-    		var canvas = document.getElementById("canvas");
-		    canvas.width = window.innerWidth;
-		    canvas.height = window.innerHeight;
-        	console.log("initit");
-			var stage = new createjs.Stage("canvas");
-			var circle = new createjs.Shape();
-			circle.graphics.beginFill("red").drawCircle(0, 0, 50);
-			circle.x = 100;
-			circle.y = 100;
-			stage.addChild(circle);
-			stage.enableMouseOver(10);
-			stage.update();
-		
 
-		    stage.on("stagemousemove",function(evt) {
-				circle.x = evt.stageX;
-				circle.y = evt.stageY;
+		//http://www.howtocreate.co.uk/tutorials/javascript/objects
+		//playerbar is a red rectangle that moves with the mouse
+		function playerBar(yCoord, height, width, stage){
+			console.log("object created");
+			this.height = height;
+			this.width = width;
+
+			//instantiates the bar as an easelJS shape
+			var bar = new createjs.Shape();
+			bar.graphics.beginFill("red").drawRect(0, 0, this.width, this.height);
+			bar.y = yCoord;
+			stage.addChild(bar);
+
+			//changes the location of the bar. The bar is centered at newX
+			this.setX = function(newX){
+				if(newX < canvas.width - this.width && newX > 0 + this.width){
+					bar.x = newX - this.width/2;
+				} else if (newX > canvas.width - this.width){
+					bar.x = canvas.width - this.width;
+				} else if (newX < 0 + this.width){
+					console.log("too far");
+					bar.x = 0;
+				}
+				console.log(bar.x);
 				stage.update();
+			}
+		}
+
+        function init() {
+
+    		var canvas = document.getElementById("canvas");
+		    canvas.width = window.innerWidth-200;
+		    canvas.height = window.innerHeight-200;
+        	console.log("initit");
+
+			var stage = new createjs.Stage("canvas");
+			stage.enableMouseOver(30);
+
+			var player1 = new playerBar(400, 20, 100, stage);
+
+			//listener for movement of the playerbar
+		    stage.on("stagemousemove",function(evt) {
+		    	player1.setX(evt.stageX);
 			})
         }
+
     </script>
 </head>
 <body onload="init();">
-    <canvas id="canvas" width="500" height="300">
+    <canvas id="canvas" width="500" height="300" style="border:50px solid #000000;">
         alternate content
     </canvas>
 </body>
