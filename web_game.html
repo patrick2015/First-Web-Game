@@ -7,6 +7,7 @@
     	//Global variables
     	var Score = 0;
     	var framerate = 0;
+    	var blockArray = [];
 		//http://www.howtocreate.co.uk/tutorials/javascript/objects
 		//http://www.createjs.com/tutorials/Animation%20and%20Ticker/
 
@@ -18,6 +19,7 @@
 			this.x = 200;
 			this.y = yCoord;
 			this.dx = speed;
+			this.tag = "bar";
 			var mouseX = 0;
 
 			//instantiates the bar as an easelJS shape
@@ -26,6 +28,10 @@
 			this.bar.y = yCoord;
 			stage.addChild(this.bar);
 
+			this.checkCollision = function(obj){
+				alert(obj.tag);
+			}
+			
 			this.setX = function(x){
 				mouseX = x;
 			};
@@ -63,7 +69,7 @@
 		function createBall(startX, startY, speed, radius, stage){
 			this.dx = speed;
 			this.dy = speed;
-
+			this.tag = "ball";
 			this.radius = radius;
 			this.ball = new createjs.Shape();
 			this.ball.graphics.beginFill("black").drawCircle(0, 0, radius);
@@ -72,9 +78,17 @@
 			stage.addChild(this.ball);
 
 			this.updateBall = function(){
-				if()
-				this.ball.x = this.ball.x + this.dx;
-				this.ball.y = this.ball.y + this.dy;
+				var doesCollide = false;
+				for (var i = 0; i < blockArray.length; i++) {
+					if(blockArray[i].checkCollision(this)){
+						doesCollide = true;
+					}
+				}
+					if(doesCollide){
+						console.log("WOOP WOOP");
+					}
+					this.ball.x = this.ball.x + this.dx;
+					this.ball.y = this.ball.y + this.dy;
 			}
 		}
 
@@ -107,6 +121,8 @@
 			var player1 = new createPlayerBar(400, 15, 20, 100, stage);
 			var ball1 = new createBall(50, 50, 50, 5, stage);
 			var scoreBar = new createScoreBar(stage);
+
+			blockArray.push(player1);
 
 
 			//tick handler
