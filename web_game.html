@@ -2,8 +2,9 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="web_game.css">
-    <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
+    <script src="http://code.createjs.com/easeljs-0.8.0.min.js"></script>
     <script>
+    	//	Make sure the easeljs version is 0.8.0 - 0.7.0 does not include methods like rectangle intersect
     	//Global variables
     	var Score = 0;
     	var framerate = 0;
@@ -26,11 +27,24 @@
 			this.bar = new createjs.Shape();
 			this.bar.graphics.beginFill("black").drawRect(0, 0, this.width, this.height);
 			this.bar.y = yCoord;
+			this.bounds = this.bar;
+			this.bar.setBounds(this.x, this.y, this.width, this.height);
 			stage.addChild(this.bar);
 
+			//returns new speeds after checking where the object has collided
 			this.checkCollision = function(obj){
-				alert(obj.tag);
-			}
+				rect1 = this.bounds.getBounds();
+				rect2 = obj.bounds.getBounds();
+				var boundRect = rect1.intersection(rect2);
+				if(boundRect == null){
+					console.log("FALSE");
+					return ["false"];
+				}
+				// boundRectCenter = []
+				console.log("TRUE");
+				return [-obj.dx, -obj.dy];
+				// console.log(rect1.intersects(rect2));
+			};
 			
 			this.setX = function(x){
 				mouseX = x;
@@ -38,6 +52,7 @@
 
 			this.updateBar = function(){
 				this.bar.x = this.x;
+				this.bar.setBounds(this.x, this.y, this.width, this.height);
 				if(this.x < canvas.width - this.width && this.x > 0){
 					//the 5 is leeway so that users can keep their mice still and the bar will not spazz
 					if(mouseX < this.x){
@@ -64,6 +79,19 @@
 			};
 		}
 
+		//OBSTACLE BAR CLASS -----------------------------------------------------------------------------------------------------
+		function createObstacleBar(startX, startY, width, height, stage){
+
+
+
+
+
+
+
+
+
+
+		}
 
 		//BALL CLASS --------------------------------------------------------------------------------------------------------------
 		function createBall(startX, startY, speed, radius, stage){
@@ -72,23 +100,38 @@
 			this.tag = "ball";
 			this.radius = radius;
 			this.ball = new createjs.Shape();
-			this.ball.graphics.beginFill("black").drawCircle(0, 0, radius);
+			this.ball.graphics.beginFill("black").drawCircle(radius, radius, radius);
 			this.ball.x = startX;
 			this.ball.y = startY;
+			this.ball.w = radius*2;
+			this.ball.h = radius*2;
+			this.bounds = this.ball;
+			this.ball.setBounds(this.ball.x, this.ball.y, this.ball.w, this.ball.h);
 			stage.addChild(this.ball);
 
 			this.updateBall = function(){
 				var doesCollide = false;
+				this.ball.setBounds(this.ball.x, this.ball.y, this.ball.w, this.ball.h);
 				for (var i = 0; i < blockArray.length; i++) {
-					if(blockArray[i].checkCollision(this)){
+					var newSpeeds = blockArray[i].checkCollision(this);
+					console.log(blockArray[i].tag, newSpeeds[0]);
+
+					if(newSpeeds[0] != "false"){
 						doesCollide = true;
+						this.dx = newSpeeds[0];
+						this.dy = newSpeeds[1];
+						break;
 					}
 				}
 					if(doesCollide){
-						console.log("WOOP WOOP");
+						// console.log("WOOP WOOP");
 					}
 					this.ball.x = this.ball.x + this.dx;
 					this.ball.y = this.ball.y + this.dy;
+			}
+
+			this.checkCollision = function(obj){
+
 			}
 		}
 
@@ -118,8 +161,8 @@
 			var stage = new createjs.Stage("canvas");
 			stage.enableMouseOver(5);
 
-			var player1 = new createPlayerBar(400, 15, 20, 100, stage);
-			var ball1 = new createBall(50, 50, 50, 5, stage);
+			var player1 = new createPlayerBar(400, 15, 15, 100, stage);
+			var ball1 = new createBall(0, 0, 3, 20, stage);
 			var scoreBar = new createScoreBar(stage);
 
 			blockArray.push(player1);
