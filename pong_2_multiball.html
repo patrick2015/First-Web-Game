@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>pong game-no ai atm</title>
+	<script src="http://code.createjs.com/easeljs-0.8.0.min.js"></script>
+	<script>
+		var stage, scoreL, scoreR, padL, padR;
+		var vertL = 0, vertR = 0;
+		var BALLSTARTX = 442;
+		var BALLSTARTY = 292;
+		var PADH = 100;
+		var PADW = 15;
+		var BALLSPEEDSTART = 8;
+		var MAXBOUNCEANGLE = 5*(Math.PI)/12;
+		var KEYCODE_UP = 38;
+		var KEYCODE_DOWN = 40;
+		var KEYCODE_W = 87;
+		var KEYCODE_S = 83;
+		var keys = [];
+		var ballVx = [];
+		var ballVy = [];
+		var scoreLeft = 0, scoreRight = 0;
+		var rounds = 0;
+		var ballspeed = BALLSPEEDSTART;
+		var ball = [];
+		var numBalls = 2;
+		
+		function init() {
+			stage = new createjs.Stage("pongCanvas");
+			
+			bg = stage.addChild(new createjs.Shape());
+			bg.graphics.beginFill("black").drawRect(0,0,900,600);
+			
+			scoreL = stage.addChild(new createjs.Text("0","bold 80px Arial", "white"));
+			scoreL.x = 150;
+			scoreL.y = 10;
+			scoreR = stage.addChild(new createjs.Text("0","bold 80px Arial", "white"));
+			scoreR.x = 690;
+			scoreR.y = 10;
+			
+			padL = stage.addChild(new createjs.Shape());
+			padL.graphics.beginFill("white").drawRect(20,250,PADW,PADH);
+			padR = stage.addChild(new createjs.Shape());
+			padR.graphics.beginFill("white").drawRect(880-PADW,250,PADW,PADH);
+			
+			tmp = stage.addChild(new createjs.Shape());
+			tmp.graphics.beginFill("white").drawRect(BALLSTARTX,BALLSTARTY,16,16);
+			ball.push(tmp);
+			ballVx.push(-BALLSPEEDSTART);
+			ballVy.push(Math.random()*2);
+			
+			mid = stage.addChild(new createjs.Shape());
+			for(i = 5; i<=600; i+=20)
+			{
+				mid.graphics.beginFill("white").drawRect(448,i,4,10);
+			}
+		}
+		
+		function game(){
+			init();
+			
+			createjs.Ticker.on("tick", tick);
+			createjs.Ticker.setFPS(60);
+			
+			document.onkeydown = function (e) {
+				if (!e) { var e = window.event; }
+				keys[e.keyCode] = true;
+				if(keys[KEYCODE_UP]) 
+					vertR = 1;
+				if(keys[KEYCODE_DOWN]) 
+					vertR = -1;
+				if(keys[KEYCODE_W]) 
+					vertL = 1;
+				if(keys[KEYCODE_S]) 
+					vertL = -1;	
+				if(keys[KEYCODE_UP]&&keys[KEYCODE_W])
+				{
+					vertR = 1;
+					vertL = 1;
+				}	
+				if(keys[KEYCODE_UP]&&keys[KEYCODE_S])
+				{
+					vertR = 1;
+					vertL = -1;
+				}	
+				if(keys[KEYCODE_DOWN]&&keys[KEYCODE_W])
+				{
+					vertR = -1;
+					vertL = 1;
+				}	
+				if(keys[KEYCODE_DOWN]&&keys[KEYCODE_S])
+				{
+					vertR = -1;
+					vertL = -1;
+				}	
+				if(keys[KEYCODE_DOWN]&&keys[KEYCODE_UP])
+				{
+					vertR = 0;
+				}	
+				if(keys[KEYCODE_W]&&keys[KEYCODE_S])
+				{
+					vertL = 0;
+				}	
+			};
+			document.onkeyup = function (e) {
+				if (!e) { var e = window.event; }
+				keys[e.keyCode] = false;
+				if(!keys[KEYCODE_UP] && !keys[KEYCODE_DOWN]) 
+					vertR = 0;
+				if(!keys[KEYCODE_W] && !keys[KEYCODE_S]) 
+					vertL = 0;
+				if(keys[KEYCODE_UP] && !keys[KEYCODE_DOWN]) 
+					vertR = 1;
+				if(keys[KEYCODE_W] && !keys[KEYCODE_S]) 
+					vertL = 1;
+				if(!keys[KEYCODE_UP] && keys[KEYCODE_DOWN]) 
+					vertR = -1;
+				if(!keys[KEYCODE_W] && keys[KEYCODE_S]) 
+					vertL = -1;	
+			};
+		}
+		
+		function tick(event) {
+			for(i = 0; i<PADH; i++)
+			{
+				for(j = 0; j < ball.length; j++)
+				{
+					var pt1 = padR.localToLocal(880-PADW,250+i,ball[j]);
+					if (ball[j].hitTest(pt1.x, pt1.y))
+					{
+						var bounceAngle = - (i - (PADH / 2)) / (PADH / 2) * MAXBOUNCEANGLE;
+						ballVx[j] = ballspeed * -Math.cos(bounceAngle);
+						ballVy[j] = ballspeed * Math.sin(bounceAngle);
+						rounds++;
+						if(rounds % 4 == 0)
+						{
+							//ballspeed+=2;
+						}
+						if(ball.length < numBalls)
+						{
+							tmp = stage.addChild(new createjs.Shape());
+							tmp.graphics.beginFill("white").drawRect(BALLSTARTX,BALLSTARTY,16,16);
+							ball.push(tmp);
+							ballVx.push(-BALLSPEEDSTART);
+							ballVy.push(Math.random()*2);
+						}
+						break;
+					}
+					var pt2 = padL.localToLocal(20+PADW, 250+i, ball[j]);
+					if (ball[j].hitTest(pt2.x, pt2.y))
+					{
+						var bounceAngle = - (i - (PADH / 2)) / (PADH / 2) * MAXBOUNCEANGLE;
+						ballVx[j] = ballspeed * Math.cos(bounceAngle);
+						ballVy[j] = ballspeed * Math.sin(bounceAngle);
+						rounds++;
+						if(rounds % 4 == 0)
+						{
+							//ballspeed+=2;
+						}	
+						if(ball.length < numBalls)
+						{
+							tmp = stage.addChild(new createjs.Shape());
+							tmp.graphics.beginFill("white").drawRect(BALLSTARTX,BALLSTARTY,16,16);
+							ball.push(tmp);
+							ballVx.push(-BALLSPEEDSTART);
+							ballVy.push(Math.random()*2);
+						}
+						break;
+					}
+				}
+			}
+			
+			if(vertL == 1)
+			{
+				if(padL.y - (event.delta)/1000*350 > -255)
+					padL.y = padL.y - (event.delta)/1000*350;
+			}
+			else if(vertL == -1)
+			{
+				if(padL.y + (event.delta)/1000*350 < stage.canvas.height - 345)
+					padL.y = padL.y + (event.delta)/1000*350;
+			}
+			if(vertR == 1)
+			{
+				if(padR.y - (event.delta)/1000*350 > -255)
+					padR.y = padR.y - (event.delta)/1000*350;
+			}
+			else if(vertR == -1)
+			{
+				if(padR.y + (event.delta)/1000*350 < stage.canvas.height - 345)
+					padR.y = padR.y + (event.delta)/1000*350;
+			}
+			
+			for(i = 0; i < ball.length; i++)
+			{
+				ball[i].y = ball[i].y - (event.delta)/1000*ballVy[i]*50;
+				ball[i].x = ball[i].x + (event.delta)/1000*ballVx[i]*50;
+				
+				if(ball[i].y < -300 || ball[i].y > 300)
+				{
+					ballVy[i] = -ballVy[i];
+				}	
+				if(ball[i].x < -450)
+				{
+					scoreRight++;
+					scoreR.text = scoreRight;
+					for(j = 0; j < ball.length; j++)
+					{
+						stage.removeChild(ball[j]);
+					}
+					ball = [];
+					ballVx = [];
+					ballVy = [];
+					tmp = stage.addChild(new createjs.Shape());
+					tmp.graphics.beginFill("white").drawRect(BALLSTARTX,BALLSTARTY,16,16);
+					ball.push(tmp);
+					ballVx.push(-BALLSPEEDSTART);
+					ballVy.push(Math.random()*2);
+					ball[i].x = 0;
+					ball[i].y = 0;
+					ballspeed = BALLSPEEDSTART;
+					ballVx[i] = ballspeed;
+					ballVy[i] = 0;
+					rounds = 0;	
+					padL.x = 0;
+					padL.y = 0;
+					padR.x = 0;
+					padR.y = 0;
+				}
+				if(ball[i].x > 450)
+				{
+					scoreLeft++;
+					scoreL.text = scoreLeft;
+					for(j = 0; j < ball.length; j++)
+					{
+						stage.removeChild(ball[j]);
+					}
+					ball = [];
+					ballVx = [];
+					ballVy = [];
+					tmp = stage.addChild(new createjs.Shape());
+					tmp.graphics.beginFill("white").drawRect(BALLSTARTX,BALLSTARTY,16,16);
+					ball.push(tmp);
+					ballVx.push(-BALLSPEEDSTART);
+					ballVy.push(Math.random()*2);
+					ball[i].x = 0;
+					ball[i].y = 0;
+					ballspeed = BALLSPEEDSTART;
+					ballVx[i] = -ballspeed;
+					ballVy[i] = 0;
+					rounds = 0;
+					padL.x = 0;
+					padL.y = 0;
+					padR.x = 0;
+					padR.y = 0;
+				}
+			}
+			stage.update(event);
+		}
+	</script>
+</head>
+<body onload="game();">
+	<canvas id="pongCanvas" width="900" height="600" style="border:1px solid"></canvas>
+</body>
+</html>
