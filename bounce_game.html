@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="web_game.css">
+    <script src="http://code.createjs.com/easeljs-0.8.0.min.js"></script>
+    <script>
+    	//	Make sure the easeljs version is 0.8.0 - 0.7.0 does not include methods like rectangle intersect
+    	//Global variables
+    	var Score = 0;
+    	var framerate = 0;
+    	var itemArray = [];
+    	var distanceMatrix = [];
+    	var stage;
+    	var canvas;
+    	var time = 0;
+    	var pause = false;
+
+    	//TWO TYPES OF ITEMS: RECTANGLES AND BALLS
+    	//
+
+
+        function init() {
+
+    		canvas = document.getElementById("canvas");
+		    canvas.width = window.innerWidth-200;
+		    canvas.height = window.innerHeight-200;
+        	// console.log("initit");
+
+			stage = new createjs.Stage("canvas");
+			createjs.Ticker.addEventListener("tick", handleTick);
+			createjs.Ticker.setFPS(60);
+
+			var ball1 = new createBall(50, 50, 3, 3, 20, 0);
+			var ball2 = new createBall(200, 50, -3, 3, 20, 1);
+			var ball3 = new createBall(100, 50, -6, 6, 20, 2);
+			var ball4 = new createBall(150, 50, 6, 6, 20, 3);
+			var ball5 = new createBall(400, 50, -10, 2, 20, 4);
+
+			var scoreBar = new createScoreBar(5);
+			var rect1 = new createRectangle(-100, 0, 100, canvas.height, 6);
+			var rect2 = new createRectangle(canvas.width, 0, 100, canvas.height, 7);
+			var rect3 = new createRectangle(0, -100, canvas.width, 100, 8);
+			var rect4 = new createRectangle(0, canvas.height, canvas.width, 100, 9);
+			var rect5 = new createRectangle(500, 100, 600, 150, 10);
+			//order in which items are added to itemArray matters, posiotion of item in itemarray AND itemarrayindex (last argument in rect and circle objects) must coincide
+			itemArray.push(ball1);
+			itemArray.push(ball2);
+			itemArray.push(ball3);
+			itemArray.push(ball4);
+			itemArray.push(ball5);
+			itemArray.push(scoreBar);
+			itemArray.push(rect1);
+			itemArray.push(rect2);
+			itemArray.push(rect3);
+			itemArray.push(rect4);
+			itemArray.push(rect5);
+
+			for(var a = 0; a < itemArray.length; a++){
+				distanceMatrix.push([]);
+				for(var b = 0; b < itemArray.length;b++){
+					distanceMatrix[a].push(0);
+				}
+			}
+			updateDistanceMatrix();
+
+			function handleTick(event) {
+				if(!pause){
+					for(var n = 0; n < itemArray.length; n++){
+						itemArray[n].update();
+					}
+					for(var n = 0; n < itemArray.length; n++){
+						itemArray[n].detectCollision();
+					}
+					updateDistanceMatrix();
+					// for(var a = 0; a < itemArray.length; a++){
+					// 	if(itemArray[a].tag == "ball"){
+					// 		for(var b = 0; b < itemArray.length; b++){
+					// 			if(itemArray[b].tag=="ball"){
+					// 				console.log("Distance from", a, "to", b, "is", distanceMatrix[a][b]);
+					// 			}
+					// 		}
+					// 	}
+					// }
+					time = time + 1;
+					stage.update();	
+					console.log(pause);
+				}
+			}
+	 		document.onkeypress = function(e) {
+				console.log("button press", e.keyCode);
+				if(e.keyCode == 115){
+					console.log("PAUSE CHANGED", pause);
+					if(pause){
+						pause = false;
+					} else {
+					pause = true;
+					}
+				}
+
+			};
+        }
+
+    //BUG WHEN CIRCLES HIT BOTTOM OF A RECT, POSSIBLY RELATED TO MY REFLECTION ANGLE METHOD
+    //all circles are calculated FROM CORNER
+    //changes velocities if they hit the rectangle
+    function detectCircleRectCollision(circ, rect){
+    	// console.log("detectCircleRectCollision");
+    	if(circ.x < rect.x+rect.width+circ.radius && circ.x > rect.x - circ.radius && circ.y < rect.y + rect.height + circ.radius && circ.y > rect.y - circ.radius){
+    		console.log("RECT COLLIDE");
+    		//get point on edge
+    		var ex;
+    		var ey;
+    		//top or bottom edge
+    		if(circ.x < rect.x + rect.width && circ.x > rect.x){
+       			console.log("HIT TOP OR BOTTOM", circ.itemArrayIndex);
+    			ex = circ.x;
+    			ey = rect.y;
+    			var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy)
+    			console.log(circ.x, circ.y, ex, ey, circ.dx, circ.dy, coords[0], coords[1]);
+    			circ.dx = coords[0];
+    			circ.dy = coords[1];
+    		//bottom right or left corners
+    		} else if(circ.y > rect.y + rect.height){
+    			if(circ.x < rect.x){
+    				console.log("HIT BOTTOM LEFT CORNER");
+    				//check if distance to corner is actually less than the radius of the circle
+    				if(Math.sqrt(Math.pow(circ.x - rect.x, 2) + Math.pow(circ.y - (rect.y + rect.height), 2)) <= circ.radius){
+    					console.log("close enough");
+    					ex = rect.x;
+    					ey = rect.y + rect.height;
+    					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
+		    			circ.dx = coords[0];
+		    			circ.dy = coords[1];
+    				} else {
+    					console.log("not close enough");
+    					// return ["novalue", "novalue"];
+    				}
+    			} else {
+    				console.log("HIT BOTTOM RIGHT CORNER");
+    				if(Math.sqrt(Math.pow(circ.x - (rect.x + rect.width), 2) + Math.pow(circ.y - (rect.y + rect.height), 2)) <= circ.radius){
+    					console.log("close enough");
+    					ex = rect.x + rect.width;
+    					ey = rect.y + rect.height;
+    					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
+		    			circ.dx = coords[0];
+		    			circ.dy = coords[1];
+    				} else {
+    					console.log("not close enough");
+    					// return ["novalue", "novalue"];
+    				}
+    			}
+    		//top right or left corners
+    		} else if(circ.y < rect.y){
+    			if(circ.x < rect.x){
+    				console.log("HIT TOP LEFT CORNER");
+    				if(Math.sqrt(Math.pow(circ.x - rect.x, 2) + Math.pow(circ.y - rect.y, 2)) <= circ.radius){
+    					console.log("close enough");
+    					ex = rect.x;
+    					ey = rect.y;
+    					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
+		    			circ.dx = coords[0];
+		    			circ.dy = coords[1];
+    				} else {
+    					console.log("not close enough");
+    					// return ["novalue", "novalue"];
+    				}    				
+    			} else {
+    				console.log("HIT TOP RIGHT CORNER");
+    				if(Math.sqrt(Math.pow(circ.x - (rect.x + rect.width), 2) + Math.pow(circ.y - rect.y, 2)) <= circ.radius){
+    					console.log("close enough");
+    					ex = rect.x + rect.width;
+    					ey = rect.y;
+    					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
+		    			circ.dx = coords[0];
+		    			circ.dy = coords[1];
+    				} else {
+    					console.log("not close enough");
+    					// return ["novalue", "novalue"];
+    				}
+    			}
+    		//right or left sides, may have to add in collision for when ball and bar are moving in the same direction
+    		} else {
+    			console.log("HIT RIGHT OR LEFT SIDES", circ.x, rect.x, rect.x + rect.width, circ.radius);
+    			ey = circ.y;
+    			ex = rect.x;
+    			var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
+    			circ.dx = coords[0];
+    			circ.dy = coords[1];
+    		}
+    	} else {
+    		// return ["novalue", "novalue"];
+    	}
+    }
+    //could be optimized, o(n^2) right now
+	function updateDistanceMatrix(){
+		for(var a = 0; a < itemArray.length; a++){
+			var tag = itemArray[a].tag;
+			// console.log(tag);
+			for(var b = 0; b < distanceMatrix[a].length; b++){
+				if(a == b){
+					distanceMatrix[a][b] = "self";	
+				} else {
+					if(tag == "ball"){
+						distanceMatrix[a][b] = Math.sqrt(Math.pow(itemArray[a].x - itemArray[b].x, 2) + Math.pow(itemArray[a].y - itemArray[b].y, 2));
+					} else if(tag == "Scorebar"){
+						distanceMatrix[a][b] = "no dist";
+					} else if(tag == "rectangle"){
+						// console.log(itemArray[b].tag);
+						if(itemArray[b].tag == "ball"){
+							// console.log("ballrect");
+							detectCircleRectCollision(itemArray[b], itemArray[a]);
+						}
+						distanceMatrix[a][b] = "placeholder dist";
+					}
+				}
+			}
+		}
+	} 
+
+	function getDiff(a1, a2){
+		diff = Math.abs(a1-a2);
+		if(diff < Math.PI){
+			return diff;
+		} else {
+			if(Math.abs(2*Math.PI - diff) != 2*Math.PI - diff){
+				console.log("INTERESTING ERROR");
+			}
+			return 2*Math.PI - diff;
+		}
+	}
+
+	function changeAngle(a1, a2){
+		if(Math.abs(a1-a2) > Math.PI){
+			// console.log("ANGLE CHANGED", a1, a2, 2*Math.PI - a1);
+			return a1 + 2*Math.PI;
+		}
+		return a1;
+	}
+
+	function getNewVelocities(x1, y1, x2, y2, dx, dy){
+		// console.log("entries", x1, y1, x2, y2, dx, dy);
+		// console.log("dx dy", dx, dy);
+		//ball angle is line through centers;
+		var hypot = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+		// console.log("HYPOT", hypot);
+		var ballAngle = Math.atan2((y1-y2), (x1-x2));
+		if(ballAngle < 0){
+			ballAngle = ballAngle + 2*Math.PI;
+		}
+		var angleOfIncidenceFromXAxis = Math.atan2(dy,dx) + Math.PI;
+		var ballNormal = ballAngle + Math.PI/2;
+		var angleOfIncidence;
+		var angleOfReflectionFromXAxis;
+		// console.log("angleOfIncidenceFromXAxis", angleOfIncidenceFromXAxis*180/Math.PI, "ballAngle", ballAngle*180/Math.PI, "ballNormal", ballNormal*180/Math.PI);
+		if(angleOfIncidenceFromXAxis > ballNormal && angleOfIncidenceFromXAxis < ballNormal + Math.PI){
+			// console.log("CASE 1");
+			if(angleOfIncidenceFromXAxis < ballAngle+Math.PI){
+				// console.log("CASE 2-1");
+				angleOfIncidence = getDiff(ballAngle+Math.PI, angleOfIncidenceFromXAxis);
+				angleOfReflectionFromXAxis = ballAngle + Math.PI + angleOfIncidence;
+			} else {
+				// console.log("CASE 2-2");
+				angleOfIncidence = getDiff(ballAngle+Math.PI, angleOfIncidenceFromXAxis);
+				angleOfReflectionFromXAxis = ballAngle + Math.PI - angleOfIncidence;
+				// console.log(angleOfIncidence*180/Math.PI, (ballAngle + Math.PI)*180/Math.PI);
+			}
+		} else {
+			angleOfIncidenceFromXAxis = changeAngle(angleOfIncidenceFromXAxis, ballAngle);
+			if(angleOfIncidenceFromXAxis < ballAngle){
+				// console.log("CASE 2-3");
+				angleOfIncidence = getDiff(ballAngle, angleOfIncidenceFromXAxis);
+				angleOfReflectionFromXAxis = ballAngle + angleOfIncidence;
+			} else {
+				// console.log("CASE 2-4");
+				angleOfIncidence = getDiff(ballAngle, angleOfIncidenceFromXAxis);
+				angleOfReflectionFromXAxis = ballAngle - angleOfIncidence;
+			}
+		}
+		var ndy = Math.sin(angleOfReflectionFromXAxis)*hypot;
+		var ndx = Math.cos(angleOfReflectionFromXAxis)*hypot;
+
+		// console.log("NEW", ndy, ndx, hypot);
+		return [ndx, ndy];
+
+	}
+
+	function getNewCircleCoordsAfterIntersection(x1, y1, x2, y2, r1, r2){
+		// console.log("krappo", x1, y1, x2, y2, r1, r2);
+		var dist = Math.sqrt(Math.pow(x1 - x2, 2)+Math.pow(y1 - y2, 2));
+
+
+		var angle = Math.atan2((y2 - y1),(x2 - x1));
+
+
+		var newDistY = Math.sin(angle)*(r1+r2);
+		var newDistX = Math.cos(angle)*(r1+r2);
+
+		// console.log(newDistX, newDistY);
+
+		return [x2 - newDistX, y2 - newDistY];
+	}
+
+
+    	//calculate all distances at once
+
+		//origin is the current x, y coordinates of the shape - typically the corner, translates the array to the new x, y
+		function translatePerimeterArray(origin, perimeterArray){
+			actualArray = [];
+			for (var i = 0; i < perimeterArray.length; i++){
+				actualArray[i] = [(perimeterArray[i][0] + origin[0]), (perimeterArray[i][1] + origin[1])];
+				if(actualArray[i] == 0){
+					console.log("wtf");
+				}
+			}
+			for(i = 0; i < actualArray.length; i++){
+				if(actualArray[i] == 0){
+					console.log("wtf", actualArray[i]);
+				}
+			}
+			return actualArray;
+		}
+
+		var counter = 0;
+		//BALL CLASS --------------------------------------------------------------------------------------------------------------
+		function createBall(startX, startY, dx, dy, radius, itemArrayIndex){
+			this.dx = dx;
+			this.dy = dy;
+			this.tag = "ball";
+			this.itemArrayIndex = itemArrayIndex;
+			console.log("created", itemArrayIndex);
+			this.radius = radius;
+			this.x = startX;
+			this.y = startY;
+			this.perimeterArray = [];
+			for(var cx = -radius; cx <= radius; cx++){
+				this.perimeterArray.push([radius+cx, radius+Math.floor(Math.sqrt(Math.pow(radius, 2)-Math.pow(cx, 2)))]);
+				this.perimeterArray.push([radius+cx, radius-Math.floor(Math.sqrt(Math.pow(radius, 2)-Math.pow(cx, 2)))]);
+			}
+
+			this.ball = new createjs.Shape();
+			if(itemArrayIndex == -1){
+			this.ball.graphics.beginFill("black").drawCircle(0, 0, radius);
+			} else {
+			this.ball.graphics.beginFill("red").drawCircle(0, 0, radius);				
+			}
+			this.ball.x = startX;
+			this.ball.y = startY;
+			this.ball.w = radius*2;
+			this.ball.h = radius*2;
+			this.bounds = this.ball;
+			stage.addChild(this.ball);
+
+			this.score = new createjs.Text(itemArrayIndex, "20px Arial", "#000000");
+			this.score.x = this.x;
+			this.score.y = this.y;
+			stage.addChild(this.score);
+
+			this.line = new createjs.Shape();
+	        stage.addChild(this.line);
+	        this.line.graphics.setStrokeStyle(2);
+	        this.line.graphics.beginStroke("black");
+	        this.line.graphics.moveTo(startX, startY);
+	       	this.line.graphics.lineTo(startX, startY);
+	        this.line.graphics.endStroke();			
+
+			this.update = function(){
+					this.x = this.x + this.dx;
+					this.y = this.y + this.dy;
+					this.ball.x = this.x;
+					this.ball.y = this.y;
+					this.line.graphics.clear();
+			        this.line.graphics.beginStroke("black");
+			        this.line.graphics.moveTo(this.x, this.y);
+			        var magnitude = Math.sqrt(Math.pow(this.dx, 2) + Math.pow(this.dy, 2));
+			       	this.line.graphics.lineTo(this.x + this.dx*10, this.y + this.dy*10);
+			       	// this.line.graphics.moveTo(this.x+this.radius, this.y+this.radius);
+			       	// this.line.graphics.lineTo(this.x+this.radius+this.radius, this.y+this.radius);
+			        this.line.graphics.endStroke();
+			        this.score.x = this.x;
+			        this.score.y = this.y
+			};
+
+			this.detectCollision = function(obj){
+			        for(var n = 0; n < itemArray.length; n++){
+			        	// console.log(this.tag);
+			        	if(itemArray[n].tag == "ball" && distanceMatrix[this.itemArrayIndex][n] < this.radius + itemArray[n].radius){
+			        		// console.log("COLLIDE");
+			        		// pause = true;
+			        		var coords = getNewVelocities(this.x, this.y, itemArray[n].x, itemArray[n].y, this.dx, this.dy);
+			        		// console.log(this.x, this.y, itemArray[n].x, itemArray[n].y);
+			        		this.dx = coords[0];
+			        		this.dy = coords[1];
+
+			        		var coords1 = getNewVelocities(this.x, this.y, itemArray[n].x, itemArray[n].y, itemArray[n].dx, itemArray[n].dy);
+			        		itemArray[n].dx = coords1[0];
+			        		itemArray[n].dy = coords1[1];
+
+			        		distanceMatrix[this.itemArrayIndex][n] = "CollisionAlreadyCalculated";
+			        		distanceMatrix[n][this.itemArrayIndex] = "CollisionAlreadyCalculated";
+
+			        		var coords2 = getNewCircleCoordsAfterIntersection(this.x, this.y, itemArray[n].x, itemArray[n].y, this.radius, itemArray[n].radius);
+			        		// console.log(this.x, this.y, coords2);
+			        		// console.log(this.x, this.y, itemArray[n].x, itemArray[n].y, this.radius, itemArray[n].radius);
+			        		this.x = coords2[0];
+			        		this.y = coords2[1];
+			        	}
+			        }				
+			};
+		}
+		//rectangle class
+		function createRectangle(startX, startY, width, height, itemArrayIndex){
+			this.x = startX;
+			this.y = startY;
+			this.width = width;
+			this.height = height;
+			this.tag = "rectangle";
+			this.itemArrayIndex = itemArrayIndex;
+
+			this.rectangle = new createjs.Shape();
+			this.rectangle.graphics.beginFill("black").drawRect(0, 0, this.width, this.height);	
+			stage.addChild(this.rectangle);	
+			this.rectangle.x = this.x;
+			this.rectangle.y = this.y;
+
+			this.perimeterArray = [];
+
+			this.update = function(){
+				//do nothing
+			};
+
+			this.detectCollision = function(obj){
+
+			};
+
+
+		}
+		//SCOREBAR CLASS -------------------------------------------------------------------------------------------------------
+		function createScoreBar(itemArrayIndex){
+			this.tag = "scoreBar";
+			this.score = new createjs.Text("FPS: 00", "20px Arial", "#000000");
+			this.score.x = 900;
+			this.score.y = 50;
+			this.score.textBaseline = "alphabetic";
+			stage.addChild(this.score);
+			this.itemArrayIndex = itemArrayIndex;
+
+			this.update = function(){
+				framerate = createjs.Ticker.getMeasuredFPS();
+				this.score.text = "FPS: "+ framerate; 
+			}
+			this.detectCollision = function(){
+				//empty method
+			}			
+		}
+    </script>
+</head>
+<body onload="init();">
+    <canvas id="canvas" width="500" height="300" style="border:2px solid #000000;">
+    </canvas>
+</body>
+</html>w

@@ -12,8 +12,32 @@
 		//http://www.howtocreate.co.uk/tutorials/javascript/objects
 		//http://www.createjs.com/tutorials/Animation%20and%20Ticker/
 
+
+		//origin is the current x, y coordinates of the shape - typically the corner
+		function translatePerimeterArray(origin, perimeterArray){
+			// console.log("LOG LOG"+origin);
+			actualArray = [];
+			for (var i = 0; i < perimeterArray.length; i++){
+				// if(actualArray[i][0] == null || actualArray[i][1] == null){
+				// }
+				// console.log(perimeterArray[i][0], perimeterArray[i][1]);
+				actualArray[i] = [(perimeterArray[i][0] + origin[0]), (perimeterArray[i][1] + origin[1])];
+				if(actualArray[i] == 0){
+					console.log("wtf");
+				}
+				// console.log(actualArray[i]);
+			}
+			for(i = 0; i < actualArray.length; i++){
+				if(actualArray[i] == 0){
+					console.log("wtf", actualArray[i]);
+				}
+			}
+			return actualArray;
+		}
+
+	var printOnce = true;
 		//PLAYERBAR CLASS -------------------------------------------------------------------------------------------------------------
-		function createPlayerBar(yCoord, speed, height, width, stage){
+		function createPlayerBar(yCoord, speed, width, height, stage){
 			console.log("object created");
 			this.height = height;
 			this.width = width;
@@ -31,25 +55,65 @@
 			this.bar.setBounds(this.x, this.y, this.width, this.height);
 			stage.addChild(this.bar);
 
+			this.perimeterArray = [];
+			//array of coordinate perimeter value pairs
+			//top and bottom edges
+			for(var i = 0; i < this.width; i++){
+				//0 to this.width is bottom of bar
+				this.perimeterArray.push([i, 0]);
+			}
+			for(var i = 0; i < this.width; i++){
+				//this.width to this.width*2 is top of bar
+				this.perimeterArray.push([i, this.height]);				
+			}
+			//side edges
+			for(var i = 1; i < this.height-1; i++){
+				//this.width*2 + 1 to this.width*2 + this.height - 2
+				this.perimeterArray.push([0, i]);
+			}
+			for(var i = 1; i < this.height - 1; i++){
+				//this.width*2 + this.height - 1 to this.width*2 + (this.height - 2)*2
+				this.perimeterArray.push([this.width, i]);				
+			}
+
 			//returns new speeds after checking where the object has collided
+			//checks the trajectory of an object
+
 			this.checkCollision = function(obj){
-				rect1 = this.bounds.getBounds();
-				rect2 = obj.bounds.getBounds();
-				var boundRect = rect1.intersection(rect2);
-				if(boundRect == null){
-					console.log("FALSE");
-					return ["false"];
-				}
-				// boundRectCenter = []
-				console.log("TRUE");
-				return [-obj.dx, -obj.dy];
-				// console.log(rect1.intersects(rect2));
+					var tArray = translatePerimeterArray([this.x, this.y], this.perimeterArray);
+					//dy/dx(x-x0) = (y-y0)
+					//x = x = dx/dy(y-y0)+x0
+
+					if(obj.tag == "ball"){
+						intersects = [];
+						//check top
+						var ix = obj.dx/obj.dy*(this.y - obj.y) + obj.x;
+						// console.log(ix, this.x, this.y, "x = "+obj.dx+"/"+obj.dy+"*(y-"+obj.y+") +"+obj.x);
+						if(ix < 0 || ix > canvas.width){
+							console.log("NOT ON PATH TO INTERSECT");
+							return ["false"];
+						} else {
+							intersects.push([ix, this.y]);
+						}
+
+						for(var a = 0; a < this.width; a++){
+							// console.log(tArray[a]);
+							if(tArray[a].join() == intersects[0].join()){
+								console.log("PATH TO INTERSECT");
+							}
+						}
+					}
+					// console.log(this.perimeterArray.length, this.width*2+(this.height-2)*2);
+		
+				// console.log("TRUE");
+				return ["false"];
+
 			};
 			
 			this.setX = function(x){
 				mouseX = x;
 			};
-
+			//bar moves towards the mouse
 			this.updateBar = function(){
 				this.bar.x = this.x;
 				this.bar.setBounds(this.x, this.y, this.width, this.height);
@@ -99,6 +163,26 @@
 			this.dy = speed;
 			this.tag = "ball";
 			this.radius = radius;
+			this.x = startX;
+			this.y = startY;
+			this.perimeterArray = [];
+			//USE MATH.POW INSTEAD OF ^2
+			//x^2 + y^2 = r
+			//y = sqrt(r-x^2)
+			for(var cx = -radius; cx <= radius; cx++){
+				// if(isNaN(Math.sqrt(radius^2-cx^2))){
+				// 	console.log("NAN "+cx+" "+ radius+" "+Math.sqrt(Math.pow(radius, 2)-Math.pow(cx, 2))+" | "+Math.sqrt(radius^2-cx^2));
+				// }
+				// console.log(Math.sqrt(radius^2-cx^2));
+				this.perimeterArray.push([radius+cx, radius+Math.floor(Math.sqrt(Math.pow(radius, 2)-Math.pow(cx, 2)))]);
+				this.perimeterArray.push([radius+cx, radius-Math.floor(Math.sqrt(Math.pow(radius, 2)-Math.pow(cx, 2)))]);
+			}
+			for(var n in this.perimeterArray){
+				if(n==null){
+					console.log("PROBLEM PROBLEM PROBLEM");
+				}
+			}
+
 			this.ball = new createjs.Shape();
 			this.ball.graphics.beginFill("black").drawCircle(radius, radius, radius);
 			this.ball.x = startX;
@@ -114,20 +198,24 @@
 				this.ball.setBounds(this.ball.x, this.ball.y, this.ball.w, this.ball.h);
 				for (var i = 0; i < blockArray.length; i++) {
 					var newSpeeds = blockArray[i].checkCollision(this);
-					console.log(blockArray[i].tag, newSpeeds[0]);
+					// console.log(blockArray[i].tag, newSpeeds[0]);
 
 					if(newSpeeds[0] != "false"){
 						doesCollide = true;
-						this.dx = newSpeeds[0];
-						this.dy = newSpeeds[1];
+						// this.dx = newSpeeds[0];
+						// this.dy = newSpeeds[1];
 						break;
 					}
 				}
 					if(doesCollide){
 						// console.log("WOOP WOOP");
 					}
-					this.ball.x = this.ball.x + this.dx;
-					this.ball.y = this.ball.y + this.dy;
+					//add statements for this.x also
+					this.x = this.x + this.dx;
+					this.y = this.y + this.dy;
+					this.ball.x = this.x;
+					this.ball.y = this.y;
+					stage.update();
 			}
 
 			this.checkCollision = function(obj){
@@ -159,9 +247,9 @@
         	// console.log("initit");
 
 			var stage = new createjs.Stage("canvas");
-			stage.enableMouseOver(5);
+			// stage.enableMouseOver(5);
 
-			var player1 = new createPlayerBar(400, 15, 15, 100, stage);
+			var player1 = new createPlayerBar(400, 15, 200, 40, stage);
 			var ball1 = new createBall(0, 0, 3, 20, stage);
 			var scoreBar = new createScoreBar(stage);
 

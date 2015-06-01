@@ -1,30 +1,40 @@
 <!DOCTYPE html>
+
 <html>
-<body>
+<body onload="init();">
+    <canvas id="canvas" width="500" height="300" style="border:10px solid #000000;">
+        alternate content
+    </canvas>
+	<script src="http://code.createjs.com/easeljs-0.8.0.min.js"></script>
+	<script>
 
-<p>Creating and using an object method.</p>
+	function getNewCircleCoordsAfterIntersection(x1, y1, x2, y2, r1, r2){
+		console.log("krappo", x1, y1, x2, y2, r1, r2);
+		var dist = Math.sqrt(Math.pow(x1 - x2, 2)+Math.pow(y1 - y2, 2));
 
-<p>An object method is a function definition, stored as a property value.</p>
 
-<p id="demo"></p>
+		var angle = Math.atan2((y2 - y1),(x2 - x1));
 
-<script>
 
-function createPerson(){
-this.name = "John";
-this.age = 50;
-this.getFullName = fullName;
-this.getAge = function(){
-	return this.age;
-}
-}
-function fullName(){
-return this.name;
-}
+		var newDistY = Math.sin(angle)*(r1+r2);
+		var newDistX = Math.cos(angle)*(r1+r2);
 
-John = new createPerson();
+		console.log(newDistX, newDistY);
 
-document.getElementById("demo").innerHTML = John.getAge();
-</script>
+		return [x2 - newDistX, y2 - newDistY];
+	}
+
+	function init(){
+
+		// coords = getNewCircleCoordsAfterIntersection(120, 60, 120, 50, 10, 10);
+
+		// console.log(coords);
+
+		coords = getNewCircleCoordsAfterIntersection(96, 96, 104, 96, 20, 20);
+
+		console.log(coords);
+
+	}
+	</script>
 </body>
 </html>
