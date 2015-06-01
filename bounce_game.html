@@ -2,7 +2,7 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="web_game.css">
-    <script src="http://code.createjs.com/easeljs-0.8.0.min.js"></script>
+    <script src="https://code.createjs.com/easeljs-0.8.0.min.js"></script>
     <script>
     	//	Make sure the easeljs version is 0.8.0 - 0.7.0 does not include methods like rectangle intersect
     	//Global variables
@@ -114,11 +114,14 @@
     		if(circ.x < rect.x + rect.width && circ.x > rect.x){
        			console.log("HIT TOP OR BOTTOM", circ.itemArrayIndex);
     			ex = circ.x;
-    			ey = rect.y;
+    			ey = rect.y+rect.height/2;
     			var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy)
     			console.log(circ.x, circ.y, ex, ey, circ.dx, circ.dy, coords[0], coords[1]);
     			circ.dx = coords[0];
     			circ.dy = coords[1];
+    			var coords2 = getNewCircleCoordsAfterIntersection(circ.x, circ.y, ex, ey, circ.radius, rect.height/2);
+    			circ.x = coords2[0];
+    			circ.y = coords2[1];
     		//bottom right or left corners
     		} else if(circ.y > rect.y + rect.height){
     			if(circ.x < rect.x){
@@ -131,6 +134,9 @@
     					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
 		    			circ.dx = coords[0];
 		    			circ.dy = coords[1];
+		    			var coords2 = getNewCircleCoordsAfterIntersection(circ.x, circ.y, ex, ey, circ.radius, 0);
+		    			circ.x = coords2[0];
+		    			circ.y = coords2[1];
     				} else {
     					console.log("not close enough");
     					// return ["novalue", "novalue"];
@@ -144,6 +150,9 @@
     					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
 		    			circ.dx = coords[0];
 		    			circ.dy = coords[1];
+		    			var coords2 = getNewCircleCoordsAfterIntersection(circ.x, circ.y, ex, ey, circ.radius, 0);
+		    			circ.x = coords2[0];
+		    			circ.y = coords2[1];
     				} else {
     					console.log("not close enough");
     					// return ["novalue", "novalue"];
@@ -160,6 +169,9 @@
     					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
 		    			circ.dx = coords[0];
 		    			circ.dy = coords[1];
+		    			var coords2 = getNewCircleCoordsAfterIntersection(circ.x, circ.y, ex, ey, circ.radius, 0);
+		    			circ.x = coords2[0];
+		    			circ.y = coords2[1];
     				} else {
     					console.log("not close enough");
     					// return ["novalue", "novalue"];
@@ -173,6 +185,9 @@
     					var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
 		    			circ.dx = coords[0];
 		    			circ.dy = coords[1];
+		    			var coords2 = getNewCircleCoordsAfterIntersection(circ.x, circ.y, ex, ey, circ.radius, 0);
+		    			circ.x = coords2[0];
+		    			circ.y = coords2[1];
     				} else {
     					console.log("not close enough");
     					// return ["novalue", "novalue"];
@@ -182,10 +197,13 @@
     		} else {
     			console.log("HIT RIGHT OR LEFT SIDES", circ.x, rect.x, rect.x + rect.width, circ.radius);
     			ey = circ.y;
-    			ex = rect.x;
+    			ex = rect.x + rect.width/2;
     			var coords = getNewVelocities(circ.x, circ.y, ex, ey, circ.dx, circ.dy);
     			circ.dx = coords[0];
     			circ.dy = coords[1];
+    			var coords2 = getNewCircleCoordsAfterIntersection(circ.x, circ.y, ex, ey, circ.radius, rect.width/2);
+    			circ.x = coords2[0];
+    			circ.y = coords2[1];
     		}
     	} else {
     		// return ["novalue", "novalue"];
@@ -232,7 +250,11 @@
 	function changeAngle(a1, a2){
 		if(Math.abs(a1-a2) > Math.PI){
 			// console.log("ANGLE CHANGED", a1, a2, 2*Math.PI - a1);
-			return a1 + 2*Math.PI;
+			if(a1 < a2){
+				return a1 + 2*Math.PI
+			} else {
+				return a1 - 2*Math.PI;
+			}		
 		}
 		return a1;
 	}
@@ -292,8 +314,8 @@
 		var angle = Math.atan2((y2 - y1),(x2 - x1));
 
 
-		var newDistY = Math.sin(angle)*(r1+r2);
-		var newDistX = Math.cos(angle)*(r1+r2);
+		var newDistY = Math.sin(angle)*(r1+r2+3);
+		var newDistX = Math.cos(angle)*(r1+r2+3);
 
 		// console.log(newDistX, newDistY);
 
@@ -442,14 +464,24 @@
 			this.score.y = 50;
 			this.score.textBaseline = "alphabetic";
 			stage.addChild(this.score);
+
+			this.timet = new createjs.Text("Time: 0", "20px Arial", "#000000");
+			this.timet.x = 900;
+			this.timet.y = 70;
+			this.timet.textBaseline = "alphabetic";
+			stage.addChild(this.timet);
+
+
+			console.log("TIMETITIMETIMET");
 			this.itemArrayIndex = itemArrayIndex;
 
 			this.update = function(){
 				framerate = createjs.Ticker.getMeasuredFPS();
 				this.score.text = "FPS: "+ framerate; 
+				this.timet.text = "Time: " + time;
 			}
 			this.detectCollision = function(){
-				//empty method
+				//empty met1od
 			}			
 		}
     </script>
