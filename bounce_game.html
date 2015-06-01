@@ -4,8 +4,6 @@
 	<link rel="stylesheet" type="text/css" href="web_game.css">
     <script src="https://code.createjs.com/easeljs-0.8.0.min.js"></script>
     <script>
-    	//	Make sure the easeljs version is 0.8.0 - 0.7.0 does not include methods like rectangle intersect
-    	//Global variables
     	var Score = 0;
     	var framerate = 0;
     	var itemArray = [];
@@ -42,7 +40,8 @@
 			var rect3 = new createRectangle(0, -100, canvas.width, 100, 8);
 			var rect4 = new createRectangle(0, canvas.height, canvas.width, 100, 9);
 			var rect5 = new createRectangle(500, 100, 600, 150, 10);
-			//order in which items are added to itemArray matters, posiotion of item in itemarray AND itemarrayindex (last argument in rect and circle objects) must coincide
+
+			//order in which items are added to itemArray matters, position of item in itemarray AND itemarrayindex (last argument in rect and circle objects) must coincide
 			itemArray.push(ball1);
 			itemArray.push(ball2);
 			itemArray.push(ball3);
@@ -249,7 +248,6 @@
 
 	function changeAngle(a1, a2){
 		if(Math.abs(a1-a2) > Math.PI){
-			// console.log("ANGLE CHANGED", a1, a2, 2*Math.PI - a1);
 			if(a1 < a2){
 				return a1 + 2*Math.PI
 			} else {
@@ -322,25 +320,6 @@
 		return [x2 - newDistX, y2 - newDistY];
 	}
 
-
-    	//calculate all distances at once
-
-		//origin is the current x, y coordinates of the shape - typically the corner, translates the array to the new x, y
-		function translatePerimeterArray(origin, perimeterArray){
-			actualArray = [];
-			for (var i = 0; i < perimeterArray.length; i++){
-				actualArray[i] = [(perimeterArray[i][0] + origin[0]), (perimeterArray[i][1] + origin[1])];
-				if(actualArray[i] == 0){
-					console.log("wtf");
-				}
-			}
-			for(i = 0; i < actualArray.length; i++){
-				if(actualArray[i] == 0){
-					console.log("wtf", actualArray[i]);
-				}
-			}
-			return actualArray;
-		}
 
 		var counter = 0;
 		//BALL CLASS --------------------------------------------------------------------------------------------------------------
